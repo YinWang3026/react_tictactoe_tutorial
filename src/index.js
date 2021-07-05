@@ -41,7 +41,6 @@ function Square(props) {
     ); 
 }
 
-  
 class Board extends React.Component {
     // // Lift state up to Game
     // constructor(props) {
@@ -131,14 +130,14 @@ class Game extends React.Component {
             // An array of the boards
             history: [{
                 squares: Array(9).fill(null),
-                squareNumber: null,
+                squareSelected: null,
                 winner: null,
                 winningSquares: null,
+                haveSquares: true,
             }],
             xIsNext: true, 
-            stepNumber: 0, // Determine the state of game we are viewing
+            stepNumber: 0, // Determine the state/history of game we are viewing
             reverseList: false,
-
         };
     }
 
@@ -151,7 +150,7 @@ class Game extends React.Component {
 
     handleClick(i) {
         // Const = Variable cannot be redeclared, cannot be reassigned, and have Block scope
-        const history = this.state.history.slice(0, this.state.stepNumber+1); // Copy history array, [)
+        const history = this.state.history.slice(0, this.state.stepNumber+1); // Copy history array, inclusive, exclusive
         const current = history[history.length-1]; // Last item
         const squares = current.squares.slice();  // Copy
         
@@ -162,15 +161,17 @@ class Game extends React.Component {
 
         // Place move, check for winner
         squares[i] = this.state.xIsNext ? 'X' : 'O';
+        const haveSquares = haveSquaresToPlay(squares);
         const winningSquares = calculateWinner(squares);
         const winner = winningSquares ? squares[winningSquares[0]] : null;
        
         this.setState({
             history: history.concat([{ // Concat does not mutate original array
                 squares: squares, // Squares
-                squareNumber: i, // Clicked on box i
+                squareSelected: i, // Clicked on box i
                 winningSquares: winningSquares,
                 winner: winner,
+                haveSquares: haveSquares,
             }]),
             xIsNext: !this.state.xIsNext,
             stepNumber: history.length,
@@ -184,12 +185,12 @@ class Game extends React.Component {
     }
 
     // Challenge 1 - Add (row,col)
-    getCoordinates(squareNumber){
-        if (squareNumber == null) {
+    getCoordinates(squareSelected){
+        if (squareSelected == null) {
             return '';
         } else{
-            const row = squareNumber / 3;
-            const col = squareNumber % 3;
+            const row = squareSelected / 3;
+            const col = squareSelected % 3;
             const coord = ' (row:' + Math.floor(row) + ' col: ' + col + ')';
             return coord;
         }
@@ -207,6 +208,25 @@ class Game extends React.Component {
         });
     }
 
+    restartGame(){
+        // Reset the states to initial values
+        this.setState({
+            history: [{
+                squares: Array(9).fill(null),
+                squareSelected: null,
+                winner: null,
+                winningSquares: null,
+                haveSquares: true,
+            }],
+            xIsNext: true, 
+            stepNumber: 0,
+            reverseList: false,
+        });
+    }
+
+    // Render is called after setState.
+    // Do not ever trigger a setState in render
+    // Render's only job is to RENDER based on the current state
     render() {
         const history = this.state.history; 
         const current = history[this.state.stepNumber];
@@ -219,6 +239,8 @@ class Game extends React.Component {
             for (let ind of current.winningSquares) {
                 highLight[ind] = "blue";
             }
+        } else if (!current.winner && !current.haveSquares){
+            status = "No winner. Tie!"
         } else {
             status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
         }
@@ -232,7 +254,7 @@ class Game extends React.Component {
                 // Key does not need to be unique globlaly, but must be unique between components and siblings
                 <li key={move}>
                     <button onClick={() => this.jumpTo(move)}>
-                        {this.addBoldTags(desc+this.getCoordinates(step.squareNumber), move, this.state.stepNumber)}
+                        {this.addBoldTags(desc+this.getCoordinates(step.squareSelected), move, this.state.stepNumber)}
                     </button>
                 </li>
             );
@@ -250,6 +272,7 @@ class Game extends React.Component {
                 <div className="game-info">
                     <div>{status}</div>
                     <button onClick={() => this.toggleReverse()}>Reverse List</button>
+                    <button onClick={() => this.restartGame()}>Restart Game</button>
                     {/* Challenge 4 - Reverse List */}
                     {this.state.reverseList ? <ol reversed>{moves.reverse()}</ol> : <ol>{moves}</ol>}
                 </div>
@@ -276,6 +299,15 @@ function calculateWinner(squares) {
         }
     }
     return null;
+}
+// Challenge 6 - Checking for ties
+function haveSquaresToPlay(squares){
+    for (let i = 0; i < squares.length; i++){
+        if (squares[i] == null){
+            return true;
+        }
+    }
+    return false;
 }
 
   // ========================================

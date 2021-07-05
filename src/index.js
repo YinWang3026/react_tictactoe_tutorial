@@ -71,6 +71,7 @@ class Board extends React.Component {
         return (
             <Square 
                 // Square recieve value from Board, and inform Board when clicked, Squares are "Controlled Components"
+                key={i}
                 value={this.props.squares[i]} // State passed to Square as a value prop
                 onClick={() => this.props.onClick(i)} // handleClick passed to Square as a onClick prop
                 highLight={this.props.highLight[i]}
@@ -95,7 +96,7 @@ class Board extends React.Component {
             for (let col = 0; col < 3; col++) {
                 rows.push(this.renderSquare(row*3+col))
             }
-            board.push(<div className="board-row">{rows}</div>)
+            board.push(<div key={row} className="board-row">{rows}</div>)
         }
   
         return (
@@ -131,12 +132,13 @@ class Game extends React.Component {
             history: [{
                 squares: Array(9).fill(null),
                 squareNumber: null,
+                winner: null,
+                winningSquares: null,
             }],
             xIsNext: true, 
             stepNumber: 0, // Determine the state of game we are viewing
             reverseList: false,
-            winner: null,
-            winningSquares: null,
+
         };
     }
 
@@ -154,7 +156,7 @@ class Game extends React.Component {
         const squares = current.squares.slice();  // Copy
         
         // If there is a winner or the square is occupied, return
-        if (this.state.winner || squares[i]) {
+        if (current.winner || squares[i]) {
             return; 
         }
 
@@ -167,11 +169,11 @@ class Game extends React.Component {
             history: history.concat([{ // Concat does not mutate original array
                 squares: squares, // Squares
                 squareNumber: i, // Clicked on box i
+                winningSquares: winningSquares,
+                winner: winner,
             }]),
             xIsNext: !this.state.xIsNext,
             stepNumber: history.length,
-            winningSquares: winningSquares,
-            winner: winner,
         });
 
         // When Game state changes, Board is automatically re-rendered, and so are the squares
@@ -211,10 +213,10 @@ class Game extends React.Component {
         const highLight = Array(9).fill(null);
 
         let status;
-        if (this.state.winner) {
-            status = 'Winner: ' + this.state.winner;
+        if (current.winner) {
+            status = 'Winner: ' + current.winner;
             // Challenge 5 - Highlights
-            for (let ind of this.state.winningSquares) {
+            for (let ind of current.winningSquares) {
                 highLight[ind] = "blue";
             }
         } else {

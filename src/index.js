@@ -2,9 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-// Moving this to Function Component
+// // Moving this to Function Component
 // class Square_class extends React.Component {
-//     // Square no longer storing the state, Board does
+//     // // Square no longer storing the state, Board does
 //     // constructor(props) {
 //     //     super(props); // Init super class, must do first thing
 //     //     this.state = { // State is used to remember things
@@ -39,7 +39,7 @@ function Square(props) {
 
   
 class Board extends React.Component {
-    // Lift state up to Game
+    // // Lift state up to Game
     // constructor(props) {
     //     super(props)
     //     // Board storing the state of squares
@@ -49,9 +49,8 @@ class Board extends React.Component {
     //     };
     // }
 
-    // Moving to Game
+    // // Moving to Game
     // handleClick(i) {
-    //     // Const = Variable cannot be redeclared, cannot be reassigned, and have Block scope
     //     const squares = this.state.squares.slice(); // Slice creates a copy of Array
     //     if (calculateWinner(squares) || squares[i]) {
     //         return; // Display clicking after winner or a square is occupied.
@@ -61,11 +60,6 @@ class Board extends React.Component {
     //         squares: squares,
     //         xIsNext: !this.state.xIsNext,
     //     });
-    //     // When Board state changes, Square is automatically re-rendered
-    //     // Immutability is important
-    //         // Allows complex features to be done easily, ex. redo and undo
-    //         // Detecting changes can be done easily
-    //         // "Pure componends", and shouldComponentUpdate() are optimizations
     // }
 
     renderSquare(i) {
@@ -80,7 +74,7 @@ class Board extends React.Component {
     }
   
     render() {
-        // Moved to Game
+        // // Moved to Game
         // const winner = calculateWinner(this.state.squares);
         // let status;
         // if (winner) {
@@ -88,26 +82,38 @@ class Board extends React.Component {
         // } else {
         //     status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
         // }
+        
+        // Challenge 3 - Re-write board with 2 for loops
+        const board = []
+        for (let row = 0; row < 3; row++) {
+            let rows = []
+            for (let col = 0; col < 3; col++) {
+                rows.push(this.renderSquare(row*3+col))
+            }
+            board.push(<div className="board-row">{rows}</div>)
+        }
   
         return (
             <div>
-                {/* <div className="status">{status}</div> */}
-                <div className="board-row">
-                    {this.renderSquare(0)}
-                    {this.renderSquare(1)}
-                    {this.renderSquare(2)}
-                </div>
-                <div className="board-row">
-                    {this.renderSquare(3)}
-                    {this.renderSquare(4)}
-                    {this.renderSquare(5)}
-                </div>
-                <div className="board-row">
-                    {this.renderSquare(6)}
-                    {this.renderSquare(7)}
-                    {this.renderSquare(8)}
-                </div>
+                {board}
             </div>
+            // <div>
+            //     <div className="board-row">
+            //         {this.renderSquare(0)}
+            //         {this.renderSquare(1)}
+            //         {this.renderSquare(2)}
+            //     </div>
+            //     <div className="board-row">
+            //         {this.renderSquare(3)}
+            //         {this.renderSquare(4)}
+            //         {this.renderSquare(5)}
+            //     </div>
+            //     <div className="board-row">
+            //         {this.renderSquare(6)}
+            //         {this.renderSquare(7)}
+            //         {this.renderSquare(8)}
+            //     </div>
+            // </div>
         );
     }
 }
@@ -115,12 +121,15 @@ class Board extends React.Component {
 class Game extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
+        this.state = { 
+            // An array of the boards
             history: [{
                 squares: Array(9).fill(null),
+                squareNumber: null,
             }],
             xIsNext: true, 
             stepNumber: 0, // Determine the state of game we are viewing
+            reverseList: false,
         };
     }
 
@@ -132,19 +141,52 @@ class Game extends React.Component {
     }
 
     handleClick(i) {
-        const history = this.state.history.slice(0, this.state.stepNumber+1);
+        // Const = Variable cannot be redeclared, cannot be reassigned, and have Block scope
+        const history = this.state.history.slice(0, this.state.stepNumber+1); // Copy history array, [)
         const current = history[history.length-1] // Last item
         const squares = current.squares.slice();  // Copy
+        
         if (calculateWinner(squares) || squares[i]) {
             return; 
         }
         squares[i] = this.state.xIsNext ? 'X' : 'O'
         this.setState({
             history: history.concat([{ // Concat does not mutate original array
-                squares: squares,
+                squares: squares, // Squares
+                squareNumber: i, // Clicked on box i
             }]),
             xIsNext: !this.state.xIsNext,
             stepNumber: history.length,
+        });
+
+        // When Game state changes, Board is automatically re-rendered, and so are the squares
+        // Immutability is important
+        // Allows complex features to be done easily, ex. redo and undo
+        // Detecting changes can be done easily
+        // "Pure componends", and shouldComponentUpdate() are optimizations
+    }
+
+    // Challenge 1 - Add (row,col)
+    getCoordinates(squareNumber){
+        if (squareNumber == null) {
+            return '';
+        } else{
+            const row = squareNumber / 3;
+            const col = squareNumber % 3;
+            const coord = ' (row:' + Math.floor(row) + ' col: ' + col + ')';
+            return coord;
+        }
+    }
+
+    // Challenge 2 - Add bold tags to current selected step
+    addBoldTags(desc, currentStep, historyStep) {
+        return (currentStep === historyStep) ? <b>{desc}</b> : desc
+    }
+
+    // Challenge 4 - Reverse list
+    toggleReverse() {
+        this.setState({
+            reverseList: !this.state.reverseList,
         });
     }
 
@@ -168,25 +210,26 @@ class Game extends React.Component {
                 // Key does not need to be unique globlaly, but must be unique between components and siblings
                 <li key={move}>
                     <button onClick={() => this.jumpTo(move)}>
-                        {desc}
+                        {this.addBoldTags(desc+this.getCoordinates(step.squareNumber), move, this.state.stepNumber)}
                     </button>
                 </li>
             );
         });
-  
 
         return (
             <div className="game">
-            <div className="game-board">
-                <Board 
-                    squares={current.squares}
-                    onClick={(i) => this.handleClick(i)}
-                />
-            </div>
-            <div className="game-info">
-                <div>{status}</div>
-                <ol>{moves}</ol>
-            </div>
+                <div className="game-board">
+                    <Board 
+                        squares={current.squares}
+                        onClick={(i) => this.handleClick(i)}
+                    />
+                </div>
+                <div className="game-info">
+                    <div>{status}</div>
+                    <button onClick={() => this.toggleReverse()}>Reverse List</button>
+                    {/* Challenge 4 - Reverse List */}
+                    {this.state.reverseList ? <ol reversed>{moves.reverse()}</ol> : <ol>{moves}</ol>}
+                </div>
             </div>
         );
     }

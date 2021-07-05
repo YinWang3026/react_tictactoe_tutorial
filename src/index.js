@@ -31,7 +31,11 @@ import './index.css';
 function Square(props) {
     return (
         // onClick, no paranthesis
-        <button className="square" onClick={props.onClick}>
+        <button 
+            className="square" 
+            onClick={props.onClick}
+            style={{backgroundColor: props.highLight}}
+        >
             {props.value}
         </button>
     ); 
@@ -69,6 +73,7 @@ class Board extends React.Component {
                 // Square recieve value from Board, and inform Board when clicked, Squares are "Controlled Components"
                 value={this.props.squares[i]} // State passed to Square as a value prop
                 onClick={() => this.props.onClick(i)} // handleClick passed to Square as a onClick prop
+                highLight={this.props.highLight[i]}
             />
         );
     }
@@ -130,6 +135,8 @@ class Game extends React.Component {
             xIsNext: true, 
             stepNumber: 0, // Determine the state of game we are viewing
             reverseList: false,
+            winner: null,
+            winningSquares: null,
         };
     }
 
@@ -143,13 +150,19 @@ class Game extends React.Component {
     handleClick(i) {
         // Const = Variable cannot be redeclared, cannot be reassigned, and have Block scope
         const history = this.state.history.slice(0, this.state.stepNumber+1); // Copy history array, [)
-        const current = history[history.length-1] // Last item
+        const current = history[history.length-1]; // Last item
         const squares = current.squares.slice();  // Copy
         
-        if (calculateWinner(squares) || squares[i]) {
+        // If there is a winner or the square is occupied, return
+        if (this.state.winner || squares[i]) {
             return; 
         }
-        squares[i] = this.state.xIsNext ? 'X' : 'O'
+
+        // Place move, check for winner
+        squares[i] = this.state.xIsNext ? 'X' : 'O';
+        const winningSquares = calculateWinner(squares);
+        const winner = winningSquares ? squares[winningSquares[0]] : null;
+       
         this.setState({
             history: history.concat([{ // Concat does not mutate original array
                 squares: squares, // Squares
@@ -157,6 +170,8 @@ class Game extends React.Component {
             }]),
             xIsNext: !this.state.xIsNext,
             stepNumber: history.length,
+            winningSquares: winningSquares,
+            winner: winner,
         });
 
         // When Game state changes, Board is automatically re-rendered, and so are the squares
@@ -192,11 +207,16 @@ class Game extends React.Component {
 
     render() {
         const history = this.state.history; 
-        const current = history[this.state.stepNumber]
-        const winner = calculateWinner(current.squares)
+        const current = history[this.state.stepNumber];
+        const highLight = Array(9).fill(null);
+
         let status;
-        if (winner) {
-            status = 'Winner: ' + winner;
+        if (this.state.winner) {
+            status = 'Winner: ' + this.state.winner;
+            // Challenge 5 - Highlights
+            for (let ind of this.state.winningSquares) {
+                highLight[ind] = "blue";
+            }
         } else {
             status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
         }
@@ -219,7 +239,8 @@ class Game extends React.Component {
         return (
             <div className="game">
                 <div className="game-board">
-                    <Board 
+                    <Board
+                        highLight={highLight}
                         squares={current.squares}
                         onClick={(i) => this.handleClick(i)}
                     />
@@ -247,14 +268,14 @@ function calculateWinner(squares) {
       [2, 4, 6],
     ];
     for (let i = 0; i < lines.length; i++) {
-      const [a, b, c] = lines[i];
-      if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-        return squares[a];
-      }
+        const [a, b, c] = lines[i];
+        if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+            return lines[i];
+        }
     }
     return null;
-  }
-  
+}
+
   // ========================================
   
 ReactDOM.render(
